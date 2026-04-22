@@ -31,12 +31,15 @@ The JSON schema should support:
 - "y": number
 - "backgroundColor": string (hex color like "#FFFFFF", "#007AFF", etc.)
 - "cornerRadius": number (optional)
+- "opacity": number (optional, 0 to 1, default 1)
+- "stroke": { "color": string, "weight": number } (optional, hex color)
+- "dropShadow": { "color": string, "opacity": number, "x": number, "y": number, "blur": number } (optional, hex color)
 - "characters": string (only for TEXT)
 - "fontSize": number (only for TEXT)
 - "color": string (text color, default "#000000")
 - "children": array of these objects (only for FRAME)
 
-Design a high-fidelity mock-up based on the user's prompt. Provide vibrant and realistic colors. The root element must be a FRAME. Make sure the elements are properly positioned and sized to form a complete UI screen.`,
+Design a high-fidelity mock-up based on the user's prompt. Provide vibrant and realistic colors. Utilize strokes and drop shadows to create depth and hierarchy when appropriate (e.g. subtle shadow for cards, light stroke for borders). The root element must be a FRAME. Make sure the elements are properly positioned and sized to form a complete UI screen.`,
 } as const;
 
 // This is used to format the message that the user sends to the API. Note we should

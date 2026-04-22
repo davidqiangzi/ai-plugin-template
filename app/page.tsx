@@ -83,6 +83,29 @@ export default function Plugin() {
 
             const createNode = (nodeData: any): SceneNode | null => {
               let node: SceneNode;
+              
+              const applyHighFidelityProps = (n: any, data: any) => {
+                if (typeof data.opacity === 'number' && 'opacity' in n) {
+                  n.opacity = data.opacity;
+                }
+                if (data.stroke && 'strokes' in n) {
+                  n.strokes = [{ type: "SOLID", color: hexToRgb(data.stroke.color) }];
+                  if (typeof data.stroke.weight === 'number' && 'strokeWeight' in n) {
+                    n.strokeWeight = data.stroke.weight;
+                  }
+                }
+                if (data.dropShadow && 'effects' in n) {
+                  n.effects = [{
+                    type: "DROP_SHADOW",
+                    color: { ...hexToRgb(data.dropShadow.color), a: data.dropShadow.opacity ?? 0.25 },
+                    offset: { x: data.dropShadow.x || 0, y: data.dropShadow.y || 4 },
+                    radius: data.dropShadow.blur || 4,
+                    visible: true,
+                    blendMode: "NORMAL",
+                  }];
+                }
+              };
+
               try {
                 switch (nodeData.type) {
                   case "FRAME":
@@ -128,6 +151,7 @@ export default function Plugin() {
                     return null;
                 }
 
+                applyHighFidelityProps(node, nodeData);
                 node.x = nodeData.x || 0;
                 node.y = nodeData.y || 0;
                 return node;
