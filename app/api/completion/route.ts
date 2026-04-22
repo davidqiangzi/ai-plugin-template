@@ -9,6 +9,7 @@ import { CompletionRequestBody } from "@/lib/types";
 // Create an OpenAI API client
 const config = new Configuration({
   apiKey: process.env.OPENAI_API_KEY,
+  basePath: process.env.OPENAI_BASE_URL || "https://api.openai.com/v1",
 });
 const openai = new OpenAIApi(config);
 
@@ -19,9 +20,23 @@ export const runtime = "edge";
 // https://platform.openai.com/docs/guides/gpt/chat-completions-api
 const systemMessage = {
   role: "system",
-  content: `You are an expert poet, you will be given a list of bulleted strings and 
-you will write a short and concise poem using some of the information in the list. 
-Only respond with a poem, don't make the poem too long.`,
+  content: `You are an expert UI designer. You will receive a prompt to design a user interface.
+You must respond with ONLY valid JSON representing the UI hierarchy. Do not include any explanation or markdown formatting.
+The JSON schema should support:
+- "type": "FRAME" | "TEXT" | "RECTANGLE"
+- "name": string
+- "width": number
+- "height": number
+- "x": number
+- "y": number
+- "backgroundColor": string (hex color like "#FFFFFF", "#007AFF", etc.)
+- "cornerRadius": number (optional)
+- "characters": string (only for TEXT)
+- "fontSize": number (only for TEXT)
+- "color": string (text color, default "#000000")
+- "children": array of these objects (only for FRAME)
+
+Design a high-fidelity mock-up based on the user's prompt. Provide vibrant and realistic colors. The root element must be a FRAME. Make sure the elements are properly positioned and sized to form a complete UI screen.`,
 } as const;
 
 // This is used to format the message that the user sends to the API. Note we should
@@ -35,20 +50,18 @@ async function buildUserMessage(
 
   // We use zod to validate the request body. To change the data that is sent to the API,
   // change the CompletionRequestBody type in lib/types.ts
-  const { layers } = CompletionRequestBody.parse(body);
-
-  const bulletedList = layers.map((layer) => `* ${layer}`).join("\n");
+  const { prompt } = CompletionRequestBody.parse(body);
 
   return {
     role: "user",
-    content: bulletedList,
+    content: prompt,
   };
 }
 
 export async function POST(req: Request) {
   // Ask OpenAI for a streaming completion given the prompt
   const response = await openai.createChatCompletion({
-    model: "gpt-3.5-turbo",
+    model: process.env.OPENAI_MODEL || "gpt-3.5-turbo",
     stream: true,
     temperature: 0,
     messages: [systemMessage, await buildUserMessage(req)],
