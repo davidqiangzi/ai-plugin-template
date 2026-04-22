@@ -1,5 +1,6 @@
-## Overview
+[🇬🇧 English](README.md) | [🇨🇳 中文简体](README.zh-CN.md)
 
+## Overview
 This is an Figma AI plugin template that demonstrates streaming LLM responses inside of a Figma plugin. This template shows:
 
 - Securely storing OpenAI keys / prompts on a server
