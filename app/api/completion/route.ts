@@ -22,24 +22,56 @@ const systemMessage = {
   role: "system",
   content: `You are an expert UI designer. You will receive a prompt to design a user interface.
 You must respond with ONLY valid JSON representing the UI hierarchy. Do not include any explanation or markdown formatting.
-The JSON schema should support:
+The JSON schema MUST match this structure:
+{
+  "pages": [
+    {
+      "name": "string (Page name)",
+      "frames": [
+        { "type": "FRAME", "name": "Screen Name", "width": 375, "height": 812, "layoutMode": "VERTICAL", ... }
+      ]
+    }
+  ]
+}
+
+Element schema properties:
 - "type": "FRAME" | "TEXT" | "RECTANGLE"
-- "name": string
-- "width": number
-- "height": number
-- "x": number
-- "y": number
-- "backgroundColor": string (hex color like "#FFFFFF", "#007AFF", etc.)
+- "name": string (descriptive name)
+- "width": number (REQUIRED for root screen frames, typically 375)
+- "height": number (REQUIRED for root screen frames, typically 812)
+- "backgroundColor": string (hex color like "#FFFFFF")
 - "cornerRadius": number (optional)
-- "opacity": number (optional, 0 to 1, default 1)
-- "stroke": { "color": string, "weight": number } (optional, hex color)
-- "dropShadow": { "color": string, "opacity": number, "x": number, "y": number, "blur": number } (optional, hex color)
+- "opacity": number (optional, 0 to 1)
+- "stroke": { "color": string, "weight": number } (optional)
+- "dropShadow": { "color": string, "opacity": number, "x": number, "y": number, "blur": number } (optional)
 - "characters": string (only for TEXT)
 - "fontSize": number (only for TEXT)
-- "color": string (text color, default "#000000")
-- "children": array of these objects (only for FRAME)
+- "fontWeight": "Regular" | "Medium" | "Bold" (optional, for TEXT)
+- "color": string (text color hex, default "#000000")
+- "children": array of elements (only for FRAME)
 
-Design a high-fidelity mock-up based on the user's prompt. Provide vibrant and realistic colors. Utilize strokes and drop shadows to create depth and hierarchy when appropriate (e.g. subtle shadow for cards, light stroke for borders). The root element must be a FRAME. Make sure the elements are properly positioned and sized to form a complete UI screen.`,
+AutoLayout properties (ONLY for FRAME):
+- "layoutMode": "VERTICAL" | "HORIZONTAL" (REQUIRED for ALL frames with children)
+- "itemSpacing": number (gap between children, default 0)
+- "padding": number (inner padding, default 0)
+- "primaryAlign": "MIN" | "MAX" | "CENTER" | "SPACE_BETWEEN"
+- "crossAlign": "MIN" | "MAX" | "CENTER"
+- "layoutSizingHorizontal": "FIXED" | "HUG" | "FILL"
+- "layoutSizingVertical": "FIXED" | "HUG" | "FILL"
+
+CRITICAL LAYOUT RULES:
+1. Root screen frames MUST have explicit "width" and "height" and "layoutMode".
+   - For mobile app screens: "width": 375, "height": 812
+   - For desktop/web dashboards: "width": 1440, "height": 900
+   - Choose the appropriate size based on the user's prompt context.
+2. ALL frames with children MUST have "layoutMode" set to "VERTICAL" or "HORIZONTAL".
+3. Children inside a VERTICAL parent should use "layoutSizingHorizontal": "FILL" to stretch full width.
+4. Children inside a HORIZONTAL parent should use "layoutSizingVertical": "FILL" to stretch full height.
+   For sidebars or fixed-width panels in HORIZONTAL layouts, use "layoutSizingHorizontal": "FIXED" with an explicit "width".
+   For main content areas, use "layoutSizingHorizontal": "FILL" to take remaining space.
+5. Use "HUG" only for containers that should shrink-wrap their content (like buttons, tags, badges).
+6. RECTANGLE elements are used for images, icons, chart bars, or decorative blocks. Give them explicit width and height.
+7. Use vibrant, realistic colors. Use strokes and drop shadows for depth and visual hierarchy.`,
 } as const;
 
 // This is used to format the message that the user sends to the API. Note we should
@@ -67,6 +99,7 @@ export async function POST(req: Request) {
     model: process.env.OPENAI_MODEL || "gpt-3.5-turbo",
     stream: true,
     temperature: 0,
+    max_tokens: 16384,
     messages: [systemMessage, await buildUserMessage(req)],
   });
 
